@@ -1872,6 +1872,7 @@ extension RDS.DescribeDBEngineVersionsMessage: AWSPaginateToken {
 extension RDS.DescribeDBInstanceAutomatedBackupsMessage: AWSPaginateToken {
     public func usingPaginationToken(_ token: String) -> RDS.DescribeDBInstanceAutomatedBackupsMessage {
         return .init(
+            dBInstanceAutomatedBackupsArn: self.dBInstanceAutomatedBackupsArn,
             dBInstanceIdentifier: self.dBInstanceIdentifier,
             dbiResourceId: self.dbiResourceId,
             filters: self.filters,

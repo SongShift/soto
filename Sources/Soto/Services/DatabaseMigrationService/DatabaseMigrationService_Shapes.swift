@@ -3897,10 +3897,14 @@ extension DatabaseMigrationService {
         public let cdcInsertsAndUpdates: Bool?
         /// A value that enables a change data capture (CDC) load to write only INSERT operations to .csv or columnar storage (.parquet) output files. By default (the false setting), the first field in a .csv or .parquet record contains the letter I (INSERT), U (UPDATE), or D (DELETE). These values indicate whether the row was inserted, updated, or deleted at the source database for a CDC load to the target. If CdcInsertsOnly is set to true or y, only INSERTs from the source database are migrated to the .csv or .parquet file. For .csv format only, how these INSERTs are recorded depends on the value of IncludeOpForFullLoad. If IncludeOpForFullLoad is set to true, the first field of every CDC record is set to I to indicate the INSERT operation at the source. If IncludeOpForFullLoad is set to false, every CDC record is written without a first field to indicate the INSERT operation at the source. For more information about how these settings work together, see Indicating Source DB Operations in Migrated S3 Data in the AWS Database Migration Service User Guide..  AWS DMS supports the interaction described preceding between the CdcInsertsOnly and IncludeOpForFullLoad parameters in versions 3.1.4 and later.   CdcInsertsOnly and CdcInsertsAndUpdates can't both be set to true for the same endpoint. Set either CdcInsertsOnly or CdcInsertsAndUpdates to true for the same endpoint, but not both.
         public let cdcInsertsOnly: Bool?
+        /// Specifies the folder path of CDC files. For an S3 source, this setting is required if a task captures change data; otherwise, it's optional. If CdcPath is set, AWS DMS reads CDC files from this path and replicates the data changes to the target endpoint. For an S3 target, if CdcPathis set, it is the folder path where data changes are replicated. If you set  PreserveTransactions  to true, AWS DMS verifies that you have set this parameter to a folder path on your S3 target where AWS DMS can save the transaction order for the CDC load. AWS DMS creates this CDC folder path in either your S3 target working directory or the S3 target location specified by  BucketFolder  and  BucketName . For example, if you specify CdcPath as MyChangedData, and you specify BucketName as MyTargetBucket but do not specify BucketFolder, AWS DMS creates the CDC folder path following: MyTargetBucket/MyChangedData. If you specify the same CdcPath, and you specify BucketName as MyTargetBucket and BucketFolder as MyTargetData, AWS DMS creates the CDC folder path following: MyTargetBucket/MyTargetData/MyChangedData.  This setting is supported in AWS DMS versions 3.4.2 and later.
+        public let cdcPath: String?
         /// An optional parameter to use GZIP to compress the target files. Set to GZIP to compress the target files. Either set this parameter to NONE (the default) or don't use it to leave the files uncompressed. This parameter applies to both .csv and .parquet file formats.
         public let compressionType: CompressionTypeValue?
         ///  The delimiter used to separate columns in the .csv file for both source and target. The default is a comma.
         public let csvDelimiter: String?
+        /// This setting only applies if your Amazon S3 output files during a change data capture (CDC) load are written in .csv format. If  UseCsvNoSupValue  is set to true, specify a string value that you want AWS DMS to use for all columns not included in the supplemental log. If you do not specify a string value, AWS DMS uses the null value for these columns regardless of the UseCsvNoSupValue setting.  This setting is supported in AWS DMS versions 3.4.1 and later.
+        public let csvNoSupValue: String?
         ///  The delimiter used to separate rows in the .csv file for both source and target. The default is a carriage return (\n).
         public let csvRowDelimiter: String?
         /// The format of the data that you want to use for output. You can choose one of the following:     csv : This is a row-based file format with comma-separated values (.csv).     parquet : Apache Parquet (.parquet) is a columnar storage file format that features efficient compression and provides faster query response.
@@ -3929,6 +3933,8 @@ extension DatabaseMigrationService {
         public let parquetTimestampInMillisecond: Bool?
         /// The version of the Apache Parquet format that you want to use: parquet_1_0 (the default) or parquet_2_0.
         public let parquetVersion: ParquetVersionValue?
+        /// If set to true, AWS DMS saves the transaction order for a change data capture (CDC) load on the Amazon S3 target specified by  CdcPath .  This setting is supported in AWS DMS versions 3.4.2 and later.
+        public let preserveTransactions: Bool?
         /// The number of rows in a row group. A smaller row group size provides faster reads. But as the number of row groups grows, the slower writes become. This parameter defaults to 10,000 rows. This number is used for .parquet file format only.  If you choose a value larger than the maximum, RowGroupLength is set to the max row group length in bytes (64 * 1024 * 1024).
         public let rowGroupLength: Int?
         /// If you are using SSE_KMS for the EncryptionMode, provide the AWS KMS key ID. The key that you use needs an attached policy that enables AWS Identity and Access Management (IAM) user permissions and allows use of the key. Here is a CLI example: aws dms create-endpoint --endpoint-identifier value --endpoint-type target --engine-name s3 --s3-settings ServiceAccessRoleArn=value,BucketFolder=value,BucketName=value,EncryptionMode=SSE_KMS,ServerSideEncryptionKmsKeyId=value
@@ -3937,14 +3943,18 @@ extension DatabaseMigrationService {
         public let serviceAccessRoleArn: String?
         /// A value that when nonblank causes AWS DMS to add a column with timestamp information to the endpoint data for an Amazon S3 target.  AWS DMS supports the TimestampColumnName parameter in versions 3.1.4 and later.  DMS includes an additional STRING column in the .csv or .parquet object files of your migrated data when you set TimestampColumnName to a nonblank value. For a full load, each row of this timestamp column contains a timestamp for when the data was transferred from the source to the target by DMS.  For a change data capture (CDC) load, each row of the timestamp column contains the timestamp for the commit of that row in the source database. The string format for this timestamp column value is yyyy-MM-dd HH:mm:ss.SSSSSS. By default, the precision of this value is in microseconds. For a CDC load, the rounding of the precision depends on the commit timestamp supported by DMS for the source database. When the AddColumnName parameter is set to true, DMS also includes a name for the timestamp column that you set with TimestampColumnName.
         public let timestampColumnName: String?
+        /// This setting applies if the S3 output files during a change data capture (CDC) load are written in .csv format. If set to true for columns not included in the supplemental log, AWS DMS uses the value specified by  CsvNoSupValue . If not set or set to false, AWS DMS uses the null value for these columns.  This setting is supported in AWS DMS versions 3.4.1 and later.
+        public let useCsvNoSupValue: Bool?
 
-        public init(bucketFolder: String? = nil, bucketName: String? = nil, cdcInsertsAndUpdates: Bool? = nil, cdcInsertsOnly: Bool? = nil, compressionType: CompressionTypeValue? = nil, csvDelimiter: String? = nil, csvRowDelimiter: String? = nil, dataFormat: DataFormatValue? = nil, dataPageSize: Int? = nil, datePartitionDelimiter: DatePartitionDelimiterValue? = nil, datePartitionEnabled: Bool? = nil, datePartitionSequence: DatePartitionSequenceValue? = nil, dictPageSizeLimit: Int? = nil, enableStatistics: Bool? = nil, encodingType: EncodingTypeValue? = nil, encryptionMode: EncryptionModeValue? = nil, externalTableDefinition: String? = nil, includeOpForFullLoad: Bool? = nil, parquetTimestampInMillisecond: Bool? = nil, parquetVersion: ParquetVersionValue? = nil, rowGroupLength: Int? = nil, serverSideEncryptionKmsKeyId: String? = nil, serviceAccessRoleArn: String? = nil, timestampColumnName: String? = nil) {
+        public init(bucketFolder: String? = nil, bucketName: String? = nil, cdcInsertsAndUpdates: Bool? = nil, cdcInsertsOnly: Bool? = nil, cdcPath: String? = nil, compressionType: CompressionTypeValue? = nil, csvDelimiter: String? = nil, csvNoSupValue: String? = nil, csvRowDelimiter: String? = nil, dataFormat: DataFormatValue? = nil, dataPageSize: Int? = nil, datePartitionDelimiter: DatePartitionDelimiterValue? = nil, datePartitionEnabled: Bool? = nil, datePartitionSequence: DatePartitionSequenceValue? = nil, dictPageSizeLimit: Int? = nil, enableStatistics: Bool? = nil, encodingType: EncodingTypeValue? = nil, encryptionMode: EncryptionModeValue? = nil, externalTableDefinition: String? = nil, includeOpForFullLoad: Bool? = nil, parquetTimestampInMillisecond: Bool? = nil, parquetVersion: ParquetVersionValue? = nil, preserveTransactions: Bool? = nil, rowGroupLength: Int? = nil, serverSideEncryptionKmsKeyId: String? = nil, serviceAccessRoleArn: String? = nil, timestampColumnName: String? = nil, useCsvNoSupValue: Bool? = nil) {
             self.bucketFolder = bucketFolder
             self.bucketName = bucketName
             self.cdcInsertsAndUpdates = cdcInsertsAndUpdates
             self.cdcInsertsOnly = cdcInsertsOnly
+            self.cdcPath = cdcPath
             self.compressionType = compressionType
             self.csvDelimiter = csvDelimiter
+            self.csvNoSupValue = csvNoSupValue
             self.csvRowDelimiter = csvRowDelimiter
             self.dataFormat = dataFormat
             self.dataPageSize = dataPageSize
@@ -3959,10 +3969,12 @@ extension DatabaseMigrationService {
             self.includeOpForFullLoad = includeOpForFullLoad
             self.parquetTimestampInMillisecond = parquetTimestampInMillisecond
             self.parquetVersion = parquetVersion
+            self.preserveTransactions = preserveTransactions
             self.rowGroupLength = rowGroupLength
             self.serverSideEncryptionKmsKeyId = serverSideEncryptionKmsKeyId
             self.serviceAccessRoleArn = serviceAccessRoleArn
             self.timestampColumnName = timestampColumnName
+            self.useCsvNoSupValue = useCsvNoSupValue
         }
 
         private enum CodingKeys: String, CodingKey {
@@ -3970,8 +3982,10 @@ extension DatabaseMigrationService {
             case bucketName = "BucketName"
             case cdcInsertsAndUpdates = "CdcInsertsAndUpdates"
             case cdcInsertsOnly = "CdcInsertsOnly"
+            case cdcPath = "CdcPath"
             case compressionType = "CompressionType"
             case csvDelimiter = "CsvDelimiter"
+            case csvNoSupValue = "CsvNoSupValue"
             case csvRowDelimiter = "CsvRowDelimiter"
             case dataFormat = "DataFormat"
             case dataPageSize = "DataPageSize"
@@ -3986,10 +4000,12 @@ extension DatabaseMigrationService {
             case includeOpForFullLoad = "IncludeOpForFullLoad"
             case parquetTimestampInMillisecond = "ParquetTimestampInMillisecond"
             case parquetVersion = "ParquetVersion"
+            case preserveTransactions = "PreserveTransactions"
             case rowGroupLength = "RowGroupLength"
             case serverSideEncryptionKmsKeyId = "ServerSideEncryptionKmsKeyId"
             case serviceAccessRoleArn = "ServiceAccessRoleArn"
             case timestampColumnName = "TimestampColumnName"
+            case useCsvNoSupValue = "UseCsvNoSupValue"
         }
     }
 

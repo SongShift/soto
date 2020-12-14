@@ -102,6 +102,12 @@ public struct SSMErrorType: AWSErrorType {
         case opsItemInvalidParameterException = "OpsItemInvalidParameterException"
         case opsItemLimitExceededException = "OpsItemLimitExceededException"
         case opsItemNotFoundException = "OpsItemNotFoundException"
+        case opsMetadataAlreadyExistsException = "OpsMetadataAlreadyExistsException"
+        case opsMetadataInvalidArgumentException = "OpsMetadataInvalidArgumentException"
+        case opsMetadataKeyLimitExceededException = "OpsMetadataKeyLimitExceededException"
+        case opsMetadataLimitExceededException = "OpsMetadataLimitExceededException"
+        case opsMetadataNotFoundException = "OpsMetadataNotFoundException"
+        case opsMetadataTooManyUpdatesException = "OpsMetadataTooManyUpdatesException"
         case parameterAlreadyExists = "ParameterAlreadyExists"
         case parameterLimitExceeded = "ParameterLimitExceeded"
         case parameterMaxVersionLimitExceeded = "ParameterMaxVersionLimitExceeded"
@@ -317,6 +323,18 @@ public struct SSMErrorType: AWSErrorType {
     public static var opsItemLimitExceededException: Self { .init(.opsItemLimitExceededException) }
     /// The specified OpsItem ID doesn't exist. Verify the ID and try again.
     public static var opsItemNotFoundException: Self { .init(.opsItemNotFoundException) }
+    /// An OpsMetadata object already exists for the selected resource.
+    public static var opsMetadataAlreadyExistsException: Self { .init(.opsMetadataAlreadyExistsException) }
+    /// One of the arguments passed is invalid.
+    public static var opsMetadataInvalidArgumentException: Self { .init(.opsMetadataInvalidArgumentException) }
+    /// The OpsMetadata object exceeds the maximum number of OpsMetadata keys that you can assign to an application in AppManager.
+    public static var opsMetadataKeyLimitExceededException: Self { .init(.opsMetadataKeyLimitExceededException) }
+    /// Your account reached the maximum number of OpsMetadata objects allowed by AppManager. The maximum is 200 OpsMetadata objects. Delete one or more OpsMetadata object and try again.
+    public static var opsMetadataLimitExceededException: Self { .init(.opsMetadataLimitExceededException) }
+    /// The OpsMetadata object does not exist.
+    public static var opsMetadataNotFoundException: Self { .init(.opsMetadataNotFoundException) }
+    /// The system is processing too many concurrent updates. Wait a few moments and try again.
+    public static var opsMetadataTooManyUpdatesException: Self { .init(.opsMetadataTooManyUpdatesException) }
     /// The parameter already exists. You can't create duplicate parameters.
     public static var parameterAlreadyExists: Self { .init(.parameterAlreadyExists) }
     /// You have exceeded the number of parameters for this AWS account. Delete one or more parameters and try again.

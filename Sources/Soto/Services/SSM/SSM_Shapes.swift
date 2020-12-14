@@ -380,6 +380,7 @@ extension SSM {
         case amazonLinux2 = "AMAZON_LINUX_2"
         case centos = "CENTOS"
         case debian = "DEBIAN"
+        case macos = "MACOS"
         case oracleLinux = "ORACLE_LINUX"
         case redhatEnterpriseLinux = "REDHAT_ENTERPRISE_LINUX"
         case suse = "SUSE"
@@ -781,7 +782,7 @@ extension SSM {
     }
 
     public struct AssociationDescription: AWSDecodableShape {
-        /// By default, when you create a new associations, the system runs it immediately after it is created and then according to the schedule you specified. Specify this option if you don't want an association to run immediately after you create it.
+        /// By default, when you create a new associations, the system runs it immediately after it is created and then according to the schedule you specified. Specify this option if you don't want an association to run immediately after you create it. This parameter is not supported for rate expressions.
         public let applyOnlyAtCronInterval: Bool?
         /// The association ID.
         public let associationId: String?
@@ -1083,7 +1084,7 @@ extension SSM {
     }
 
     public struct AssociationVersionInfo: AWSDecodableShape {
-        /// By default, when you create a new associations, the system runs it immediately after it is created and then according to the schedule you specified. Specify this option if you don't want an association to run immediately after you create it.
+        /// By default, when you create a new associations, the system runs it immediately after it is created and then according to the schedule you specified. Specify this option if you don't want an association to run immediately after you create it. This parameter is not supported for rate expressions.
         public let applyOnlyAtCronInterval: Bool?
         /// The ID created by the system when the association was created.
         public let associationId: String?
@@ -2059,7 +2060,7 @@ extension SSM {
     }
 
     public struct CreateAssociationBatchRequestEntry: AWSEncodableShape & AWSDecodableShape {
-        /// By default, when you create a new associations, the system runs it immediately after it is created and then according to the schedule you specified. Specify this option if you don't want an association to run immediately after you create it.
+        /// By default, when you create a new associations, the system runs it immediately after it is created and then according to the schedule you specified. Specify this option if you don't want an association to run immediately after you create it. This parameter is not supported for rate expressions.
         public let applyOnlyAtCronInterval: Bool?
         /// Specify a descriptive name for the association.
         public let associationName: String?
@@ -2164,7 +2165,7 @@ extension SSM {
     }
 
     public struct CreateAssociationRequest: AWSEncodableShape {
-        /// By default, when you create a new associations, the system runs it immediately after it is created and then according to the schedule you specified. Specify this option if you don't want an association to run immediately after you create it.
+        /// By default, when you create a new associations, the system runs it immediately after it is created and then according to the schedule you specified. Specify this option if you don't want an association to run immediately after you create it. This parameter is not supported for rate expressions.
         public let applyOnlyAtCronInterval: Bool?
         /// Specify a descriptive name for the association.
         public let associationName: String?
@@ -2520,6 +2521,48 @@ extension SSM {
         }
     }
 
+    public struct CreateOpsMetadataRequest: AWSEncodableShape {
+        /// Metadata for a new AppManager application.
+        public let metadata: [String: MetadataValue]?
+        /// A resource ID for a new AppManager application.
+        public let resourceId: String
+
+        public init(metadata: [String: MetadataValue]? = nil, resourceId: String) {
+            self.metadata = metadata
+            self.resourceId = resourceId
+        }
+
+        public func validate(name: String) throws {
+            try self.metadata?.forEach {
+                try validate($0.key, name: "metadata.key", parent: name, max: 256)
+                try validate($0.key, name: "metadata.key", parent: name, min: 1)
+                try validate($0.key, name: "metadata.key", parent: name, pattern: "^(?!\\s*$).+")
+                try $0.value.validate(name: "\(name).metadata[\"\($0.key)\"]")
+            }
+            try self.validate(self.resourceId, name: "resourceId", parent: name, max: 1024)
+            try self.validate(self.resourceId, name: "resourceId", parent: name, min: 1)
+            try self.validate(self.resourceId, name: "resourceId", parent: name, pattern: "^(?!\\s*$).+")
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case metadata = "Metadata"
+            case resourceId = "ResourceId"
+        }
+    }
+
+    public struct CreateOpsMetadataResult: AWSDecodableShape {
+        /// The Amazon Resource Name (ARN) of the OpsMetadata Object or blob created by the call.
+        public let opsMetadataArn: String?
+
+        public init(opsMetadataArn: String? = nil) {
+            self.opsMetadataArn = opsMetadataArn
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case opsMetadataArn = "OpsMetadataArn"
+        }
+    }
+
     public struct CreatePatchBaselineRequest: AWSEncodableShape {
         /// A set of rules used to include patches in the baseline.
         public let approvalRules: PatchRuleGroup?
@@ -2835,6 +2878,29 @@ extension SSM {
         private enum CodingKeys: String, CodingKey {
             case windowId = "WindowId"
         }
+    }
+
+    public struct DeleteOpsMetadataRequest: AWSEncodableShape {
+        /// The Amazon Resource Name (ARN) of an OpsMetadata Object to delete.
+        public let opsMetadataArn: String
+
+        public init(opsMetadataArn: String) {
+            self.opsMetadataArn = opsMetadataArn
+        }
+
+        public func validate(name: String) throws {
+            try self.validate(self.opsMetadataArn, name: "opsMetadataArn", parent: name, max: 1011)
+            try self.validate(self.opsMetadataArn, name: "opsMetadataArn", parent: name, min: 1)
+            try self.validate(self.opsMetadataArn, name: "opsMetadataArn", parent: name, pattern: "arn:(aws[a-zA-Z-]*)?:ssm:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:opsmetadata\\/([a-zA-Z0-9-_\\.\\/]*)")
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case opsMetadataArn = "OpsMetadataArn"
+        }
+    }
+
+    public struct DeleteOpsMetadataResult: AWSDecodableShape {
+        public init() {}
     }
 
     public struct DeleteParameterRequest: AWSEncodableShape {
@@ -4658,7 +4724,7 @@ extension SSM {
         public let nextToken: String?
         /// The operating system type for which to list patches.
         public let operatingSystem: OperatingSystem
-        /// Indicates whether to list patches for the Windows operating system or for Microsoft applications. Not applicable for Linux operating systems.
+        /// Indicates whether to list patches for the Windows operating system or for Microsoft applications. Not applicable for the Linux or macOS operating systems.
         public let patchSet: PatchSet?
         /// The patch property for which you want to view patch details.
         public let property: PatchProperty
@@ -6041,6 +6107,56 @@ extension SSM {
 
         private enum CodingKeys: String, CodingKey {
             case opsItem = "OpsItem"
+        }
+    }
+
+    public struct GetOpsMetadataRequest: AWSEncodableShape {
+        /// The maximum number of items to return for this call. The call also returns a token that you can specify in a subsequent call to get the next set of results.
+        public let maxResults: Int?
+        /// A token to start the list. Use this token to get the next set of results.
+        public let nextToken: String?
+        /// The Amazon Resource Name (ARN) of an OpsMetadata Object to view.
+        public let opsMetadataArn: String
+
+        public init(maxResults: Int? = nil, nextToken: String? = nil, opsMetadataArn: String) {
+            self.maxResults = maxResults
+            self.nextToken = nextToken
+            self.opsMetadataArn = opsMetadataArn
+        }
+
+        public func validate(name: String) throws {
+            try self.validate(self.maxResults, name: "maxResults", parent: name, max: 10)
+            try self.validate(self.maxResults, name: "maxResults", parent: name, min: 1)
+            try self.validate(self.opsMetadataArn, name: "opsMetadataArn", parent: name, max: 1011)
+            try self.validate(self.opsMetadataArn, name: "opsMetadataArn", parent: name, min: 1)
+            try self.validate(self.opsMetadataArn, name: "opsMetadataArn", parent: name, pattern: "arn:(aws[a-zA-Z-]*)?:ssm:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:opsmetadata\\/([a-zA-Z0-9-_\\.\\/]*)")
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case maxResults = "MaxResults"
+            case nextToken = "NextToken"
+            case opsMetadataArn = "OpsMetadataArn"
+        }
+    }
+
+    public struct GetOpsMetadataResult: AWSDecodableShape {
+        /// OpsMetadata for an AppManager application.
+        public let metadata: [String: MetadataValue]?
+        /// The token for the next set of items to return. Use this token to get the next set of results.
+        public let nextToken: String?
+        /// The resource ID of the AppManager application.
+        public let resourceId: String?
+
+        public init(metadata: [String: MetadataValue]? = nil, nextToken: String? = nil, resourceId: String? = nil) {
+            self.metadata = metadata
+            self.nextToken = nextToken
+            self.resourceId = resourceId
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case metadata = "Metadata"
+            case nextToken = "NextToken"
+            case resourceId = "ResourceId"
         }
     }
 
@@ -7699,6 +7815,54 @@ extension SSM {
         }
     }
 
+    public struct ListOpsMetadataRequest: AWSEncodableShape {
+        /// One or more filters to limit the number of OpsMetadata objects returned by the call.
+        public let filters: [OpsMetadataFilter]?
+        /// The maximum number of items to return for this call. The call also returns a token that you can specify in a subsequent call to get the next set of results.
+        public let maxResults: Int?
+        /// A token to start the list. Use this token to get the next set of results.
+        public let nextToken: String?
+
+        public init(filters: [OpsMetadataFilter]? = nil, maxResults: Int? = nil, nextToken: String? = nil) {
+            self.filters = filters
+            self.maxResults = maxResults
+            self.nextToken = nextToken
+        }
+
+        public func validate(name: String) throws {
+            try self.filters?.forEach {
+                try $0.validate(name: "\(name).filters[]")
+            }
+            try self.validate(self.filters, name: "filters", parent: name, max: 10)
+            try self.validate(self.filters, name: "filters", parent: name, min: 0)
+            try self.validate(self.maxResults, name: "maxResults", parent: name, max: 50)
+            try self.validate(self.maxResults, name: "maxResults", parent: name, min: 1)
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case filters = "Filters"
+            case maxResults = "MaxResults"
+            case nextToken = "NextToken"
+        }
+    }
+
+    public struct ListOpsMetadataResult: AWSDecodableShape {
+        /// The token for the next set of items to return. Use this token to get the next set of results.
+        public let nextToken: String?
+        /// Returns a list of OpsMetadata objects.
+        public let opsMetadataList: [OpsMetadata]?
+
+        public init(nextToken: String? = nil, opsMetadataList: [OpsMetadata]? = nil) {
+            self.nextToken = nextToken
+            self.opsMetadataList = opsMetadataList
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case nextToken = "NextToken"
+            case opsMetadataList = "OpsMetadataList"
+        }
+    }
+
     public struct ListResourceComplianceSummariesRequest: AWSEncodableShape {
         /// One or more filters. Use a filter to return a more specific list of results.
         public let filters: [ComplianceStringFilter]?
@@ -8373,6 +8537,24 @@ extension SSM {
         }
     }
 
+    public struct MetadataValue: AWSEncodableShape & AWSDecodableShape {
+        /// Metadata value to assign to an AppManager application.
+        public let value: String?
+
+        public init(value: String? = nil) {
+            self.value = value
+        }
+
+        public func validate(name: String) throws {
+            try self.validate(self.value, name: "value", parent: name, max: 4096)
+            try self.validate(self.value, name: "value", parent: name, min: 1)
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case value = "Value"
+        }
+    }
+
     public struct ModifyDocumentPermissionRequest: AWSEncodableShape {
         /// The AWS user accounts that should have access to the document. The account IDs can either be a group of account IDs or All.
         public let accountIdsToAdd: [String]?
@@ -8765,6 +8947,64 @@ extension SSM {
         }
     }
 
+    public struct OpsMetadata: AWSDecodableShape {
+        /// The date the OpsMetadata objects was created.
+        public let creationDate: Date?
+        /// The date the OpsMetadata object was last updated.
+        public let lastModifiedDate: Date?
+        /// The user name who last updated the OpsMetadata object.
+        public let lastModifiedUser: String?
+        /// The Amazon Resource Name (ARN) of the OpsMetadata Object or blob.
+        public let opsMetadataArn: String?
+        /// The ID of the AppManager application.
+        public let resourceId: String?
+
+        public init(creationDate: Date? = nil, lastModifiedDate: Date? = nil, lastModifiedUser: String? = nil, opsMetadataArn: String? = nil, resourceId: String? = nil) {
+            self.creationDate = creationDate
+            self.lastModifiedDate = lastModifiedDate
+            self.lastModifiedUser = lastModifiedUser
+            self.opsMetadataArn = opsMetadataArn
+            self.resourceId = resourceId
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case creationDate = "CreationDate"
+            case lastModifiedDate = "LastModifiedDate"
+            case lastModifiedUser = "LastModifiedUser"
+            case opsMetadataArn = "OpsMetadataArn"
+            case resourceId = "ResourceId"
+        }
+    }
+
+    public struct OpsMetadataFilter: AWSEncodableShape {
+        /// A filter key.
+        public let key: String
+        /// A filter value.
+        public let values: [String]
+
+        public init(key: String, values: [String]) {
+            self.key = key
+            self.values = values
+        }
+
+        public func validate(name: String) throws {
+            try self.validate(self.key, name: "key", parent: name, max: 128)
+            try self.validate(self.key, name: "key", parent: name, min: 1)
+            try self.validate(self.key, name: "key", parent: name, pattern: "^(?!\\s*$).+")
+            try self.values.forEach {
+                try validate($0, name: "values[]", parent: name, max: 1024)
+                try validate($0, name: "values[]", parent: name, min: 1)
+            }
+            try self.validate(self.values, name: "values", parent: name, max: 10)
+            try self.validate(self.values, name: "values", parent: name, min: 1)
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case key = "Key"
+            case values = "Values"
+        }
+    }
+
     public struct OpsResultAttribute: AWSEncodableShape {
         /// Name of the data type. Valid value: AWS:OpsItem, AWS:EC2InstanceInformation, AWS:OpsItemTrendline, or AWS:ComplianceSummary.
         public let typeName: String
@@ -9053,7 +9293,7 @@ extension SSM {
         public let classification: String?
         /// The URL where more information can be obtained about the patch.
         public let contentUrl: String?
-        /// The Common Vulnerabilities and Exposures (CVE) ID of the patch. For example, CVE-1999-0067. Applies to Linux-based instances only.
+        /// The Common Vulnerabilities and Exposures (CVE) ID of the patch. For example, CVE-2011-3192. Applies to Linux-based instances only.
         public let cVEIds: [String]?
         /// The description of the patch.
         public let description: String?
@@ -11131,7 +11371,7 @@ extension SSM {
     }
 
     public struct UpdateAssociationRequest: AWSEncodableShape {
-        /// By default, when you update an association, the system runs it immediately after it is updated and then according to the schedule you specified. Specify this option if you don't want an association to run immediately after you update it. Also, if you specified this option when you created the association, you can reset it. To do so, specify the no-apply-only-at-cron-interval parameter when you update the association from the command line. This parameter forces the association to run immediately after updating it and according to the interval specified.
+        /// By default, when you update an association, the system runs it immediately after it is updated and then according to the schedule you specified. Specify this option if you don't want an association to run immediately after you update it. This parameter is not supported for rate expressions. Also, if you specified this option when you created the association, you can reset it. To do so, specify the no-apply-only-at-cron-interval parameter when you update the association from the command line. This parameter forces the association to run immediately after updating it and according to the interval specified.
         public let applyOnlyAtCronInterval: Bool?
         /// The ID of the association you want to update.
         public let associationId: String
@@ -11863,6 +12103,59 @@ extension SSM {
 
     public struct UpdateOpsItemResponse: AWSDecodableShape {
         public init() {}
+    }
+
+    public struct UpdateOpsMetadataRequest: AWSEncodableShape {
+        /// The metadata keys to delete from the OpsMetadata object.
+        public let keysToDelete: [String]?
+        /// Metadata to add to an OpsMetadata object.
+        public let metadataToUpdate: [String: MetadataValue]?
+        /// The Amazon Resoure Name (ARN) of the OpsMetadata Object to update.
+        public let opsMetadataArn: String
+
+        public init(keysToDelete: [String]? = nil, metadataToUpdate: [String: MetadataValue]? = nil, opsMetadataArn: String) {
+            self.keysToDelete = keysToDelete
+            self.metadataToUpdate = metadataToUpdate
+            self.opsMetadataArn = opsMetadataArn
+        }
+
+        public func validate(name: String) throws {
+            try self.keysToDelete?.forEach {
+                try validate($0, name: "keysToDelete[]", parent: name, max: 256)
+                try validate($0, name: "keysToDelete[]", parent: name, min: 1)
+                try validate($0, name: "keysToDelete[]", parent: name, pattern: "^(?!\\s*$).+")
+            }
+            try self.validate(self.keysToDelete, name: "keysToDelete", parent: name, max: 10)
+            try self.validate(self.keysToDelete, name: "keysToDelete", parent: name, min: 1)
+            try self.metadataToUpdate?.forEach {
+                try validate($0.key, name: "metadataToUpdate.key", parent: name, max: 256)
+                try validate($0.key, name: "metadataToUpdate.key", parent: name, min: 1)
+                try validate($0.key, name: "metadataToUpdate.key", parent: name, pattern: "^(?!\\s*$).+")
+                try $0.value.validate(name: "\(name).metadataToUpdate[\"\($0.key)\"]")
+            }
+            try self.validate(self.opsMetadataArn, name: "opsMetadataArn", parent: name, max: 1011)
+            try self.validate(self.opsMetadataArn, name: "opsMetadataArn", parent: name, min: 1)
+            try self.validate(self.opsMetadataArn, name: "opsMetadataArn", parent: name, pattern: "arn:(aws[a-zA-Z-]*)?:ssm:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:opsmetadata\\/([a-zA-Z0-9-_\\.\\/]*)")
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case keysToDelete = "KeysToDelete"
+            case metadataToUpdate = "MetadataToUpdate"
+            case opsMetadataArn = "OpsMetadataArn"
+        }
+    }
+
+    public struct UpdateOpsMetadataResult: AWSDecodableShape {
+        /// The Amazon Resource Name (ARN) of the OpsMetadata Object that was updated.
+        public let opsMetadataArn: String?
+
+        public init(opsMetadataArn: String? = nil) {
+            self.opsMetadataArn = opsMetadataArn
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case opsMetadataArn = "OpsMetadataArn"
+        }
     }
 
     public struct UpdatePatchBaselineRequest: AWSEncodableShape {

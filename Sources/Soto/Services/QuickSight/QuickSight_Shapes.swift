@@ -5163,7 +5163,7 @@ extension QuickSight {
             AWSMemberEncoding(label: "userArn", location: .querystring(locationName: "user-arn"))
         ]
 
-        /// A list of one or more dashboard ids that you want to add to a session that includes anonymous authorizations. IdentityType must be set to ANONYMOUS for this to work, because other other identity types authenticate as QuickSight users. For example, if you set "--dashboard-id dash_id1 --dashboard-id dash_id2 dash_id3 identity-type ANONYMOUS", the session can access all three dashboards.
+        /// A list of one or more dashboard ids that you want to add to a session that includes anonymous authorizations. IdentityType must be set to ANONYMOUS for this to work, because other identity types authenticate as QuickSight users. For example, if you set "--dashboard-id dash_id1 --dashboard-id dash_id2 dash_id3 identity-type ANONYMOUS", the session can access all three dashboards.
         public let additionalDashboardIds: [String]?
         /// The ID for the AWS account that contains the dashboard that you're embedding.
         public let awsAccountId: String
@@ -5525,18 +5525,24 @@ extension QuickSight {
     }
 
     public struct JoinInstruction: AWSEncodableShape & AWSDecodableShape {
-        /// Left operand.
+        /// Join key properties of the left operand.
+        public let leftJoinKeyProperties: JoinKeyProperties?
+        /// The operand on the left side of a join.
         public let leftOperand: String
-        /// On Clause.
+        /// The join instructions provided in the ON clause of a join.
         public let onClause: String
-        /// Right operand.
+        /// Join key properties of the right operand.
+        public let rightJoinKeyProperties: JoinKeyProperties?
+        /// The operand on the right side of a join.
         public let rightOperand: String
-        /// Type.
+        /// The type of join that it is.
         public let type: JoinType
 
-        public init(leftOperand: String, onClause: String, rightOperand: String, type: JoinType) {
+        public init(leftJoinKeyProperties: JoinKeyProperties? = nil, leftOperand: String, onClause: String, rightJoinKeyProperties: JoinKeyProperties? = nil, rightOperand: String, type: JoinType) {
+            self.leftJoinKeyProperties = leftJoinKeyProperties
             self.leftOperand = leftOperand
             self.onClause = onClause
+            self.rightJoinKeyProperties = rightJoinKeyProperties
             self.rightOperand = rightOperand
             self.type = type
         }
@@ -5553,10 +5559,25 @@ extension QuickSight {
         }
 
         private enum CodingKeys: String, CodingKey {
+            case leftJoinKeyProperties = "LeftJoinKeyProperties"
             case leftOperand = "LeftOperand"
             case onClause = "OnClause"
+            case rightJoinKeyProperties = "RightJoinKeyProperties"
             case rightOperand = "RightOperand"
             case type = "Type"
+        }
+    }
+
+    public struct JoinKeyProperties: AWSEncodableShape & AWSDecodableShape {
+        /// Indicates that a row in a table is uniquely identified by the columns in a join key. This is used by QuickSight to optimize query performance.
+        public let uniqueKey: Bool?
+
+        public init(uniqueKey: Bool? = nil) {
+            self.uniqueKey = uniqueKey
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case uniqueKey = "UniqueKey"
         }
     }
 

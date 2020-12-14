@@ -59,6 +59,7 @@ extension Lambda {
         case insufficientrolepermissions = "InsufficientRolePermissions"
         case internalerror = "InternalError"
         case invalidconfiguration = "InvalidConfiguration"
+        case invalidimage = "InvalidImage"
         case invalidsecuritygroup = "InvalidSecurityGroup"
         case invalidsubnet = "InvalidSubnet"
         case subnetoutofipaddresses = "SubnetOutOfIPAddresses"
@@ -133,6 +134,7 @@ extension Lambda {
         case insufficientrolepermissions = "InsufficientRolePermissions"
         case internalerror = "InternalError"
         case invalidconfiguration = "InvalidConfiguration"
+        case invalidimage = "InvalidImage"
         case invalidsecuritygroup = "InvalidSecurityGroup"
         case invalidsubnet = "InvalidSubnet"
         case restoring = "Restoring"
@@ -695,7 +697,7 @@ extension Lambda {
         public let kMSKeyArn: String?
         /// A list of function layers to add to the function's execution environment. Specify each layer by its ARN, including the version.
         public let layers: [String]?
-        /// The amount of memory that your function has access to. Increasing the function's memory also increases its CPU allocation. The default value is 128 MB. The value must be a multiple of 64 MB.
+        /// The amount of memory available to the function at runtime. Increasing the function's memory also increases its CPU allocation. The default value is 128 MB. The value can be any multiple of 1 MB.
         public let memorySize: Int?
         /// The type of deployment package. Set to Image for container image and set Zip for ZIP archive.
         public let packageType: PackageType?
@@ -1310,9 +1312,9 @@ extension Lambda {
         public let layers: [Layer]?
         /// For Lambda@Edge functions, the ARN of the master function.
         public let masterArn: String?
-        /// The memory that's allocated to the function.
+        /// The amount of memory available to the function at runtime.
         public let memorySize: Int?
-        /// The type of deployment package. Set to Image for container image and set Zip for ZIP archive.
+        /// The type of deployment package. Set to Image for container image and set Zip for .zip file archive.
         public let packageType: PackageType?
         /// The latest updated revision of the function or alias.
         public let revisionId: String?
@@ -3615,7 +3617,7 @@ extension Lambda {
         public let kMSKeyArn: String?
         /// A list of function layers to add to the function's execution environment. Specify each layer by its ARN, including the version.
         public let layers: [String]?
-        /// The amount of memory that your function has access to. Increasing the function's memory also increases its CPU allocation. The default value is 128 MB. The value must be a multiple of 64 MB.
+        /// The amount of memory available to the function at runtime. Increasing the function's memory also increases its CPU allocation. The default value is 128 MB. The value can be any multiple of 1 MB.
         public let memorySize: Int?
         /// Only update the function if the revision ID matches the ID that's specified. Use this option to avoid modifying a function that has changed since you last read it.
         public let revisionId: String?

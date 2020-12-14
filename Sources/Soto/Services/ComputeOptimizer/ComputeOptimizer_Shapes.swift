@@ -20,6 +20,25 @@ import SotoCore
 extension ComputeOptimizer {
     // MARK: Enums
 
+    public enum EBSFilterName: String, CustomStringConvertible, Codable {
+        case finding = "Finding"
+        public var description: String { return self.rawValue }
+    }
+
+    public enum EBSFinding: String, CustomStringConvertible, Codable {
+        case notoptimized = "NotOptimized"
+        case optimized = "Optimized"
+        public var description: String { return self.rawValue }
+    }
+
+    public enum EBSMetricName: String, CustomStringConvertible, Codable {
+        case volumereadbytespersecond = "VolumeReadBytesPerSecond"
+        case volumereadopspersecond = "VolumeReadOpsPerSecond"
+        case volumewritebytespersecond = "VolumeWriteBytesPerSecond"
+        case volumewriteopspersecond = "VolumeWriteOpsPerSecond"
+        public var description: String { return self.rawValue }
+    }
+
     public enum ExportableAutoScalingGroupField: String, CustomStringConvertible, Codable {
         case accountid = "AccountId"
         case autoscalinggrouparn = "AutoScalingGroupArn"
@@ -149,6 +168,7 @@ extension ComputeOptimizer {
 
     public enum RecommendationSourceType: String, CustomStringConvertible, Codable {
         case autoscalinggroup = "AutoScalingGroup"
+        case ebsvolume = "EbsVolume"
         case ec2instance = "Ec2Instance"
         public var description: String { return self.rawValue }
     }
@@ -203,7 +223,7 @@ extension ComputeOptimizer {
         public let autoScalingGroupName: String?
         /// An array of objects that describe the current configuration of the Auto Scaling group.
         public let currentConfiguration: AutoScalingGroupConfiguration?
-        /// The finding classification for the Auto Scaling group. Findings for Auto Scaling groups include:     NotOptimized —An Auto Scaling group is considered not optimized when AWS Compute Optimizer identifies a recommendation that can provide better performance for your workload.     Optimized —An Auto Scaling group is considered optimized when Compute Optimizer determines that the group is correctly provisioned to run your workload based on the chosen instance type. For optimized resources, Compute Optimizer might recommend a new generation instance type.    The values that are returned might be NOT_OPTIMIZED or OPTIMIZED.
+        /// The finding classification for the Auto Scaling group. Findings for Auto Scaling groups include:     NotOptimized —An Auto Scaling group is considered not optimized when AWS Compute Optimizer identifies a recommendation that can provide better performance for your workload.     Optimized —An Auto Scaling group is considered optimized when Compute Optimizer determines that the group is correctly provisioned to run your workload based on the chosen instance type. For optimized resources, Compute Optimizer might recommend a new generation instance type.
         public let finding: Finding?
         /// The time stamp of when the Auto Scaling group recommendation was last refreshed.
         public let lastRefreshTimestamp: Date?
@@ -306,8 +326,46 @@ extension ComputeOptimizer {
         }
     }
 
+    public struct EBSFilter: AWSEncodableShape {
+        /// The name of the filter. Specify Finding to return recommendations with a specific finding classification (e.g., Optimized).
+        public let name: EBSFilterName?
+        /// The value of the filter. The valid values are Optimized, or NotOptimized.
+        public let values: [String]?
+
+        public init(name: EBSFilterName? = nil, values: [String]? = nil) {
+            self.name = name
+            self.values = values
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case name
+            case values
+        }
+    }
+
+    public struct EBSUtilizationMetric: AWSDecodableShape {
+        /// The name of the utilization metric. The following utilization metrics are available:    VolumeReadOpsPerSecond - The completed read operations per second from the volume in a specified period of time. Unit: Count    VolumeWriteOpsPerSecond - The completed write operations per second to the volume in a specified period of time. Unit: Count    VolumeReadBytesPerSecond - The bytes read per second from the volume in a specified period of time. Unit: Bytes    VolumeWriteBytesPerSecond - The bytes written to the volume in a specified period of time. Unit: Bytes
+        public let name: EBSMetricName?
+        /// The statistic of the utilization metric. The following statistics are available:    Average - This is the value of Sum / SampleCount during the specified period, or the average value observed during the specified period.    Maximum - The highest value observed during the specified period. Use this value to determine high volumes of activity for your application.
+        public let statistic: MetricStatistic?
+        /// The value of the utilization metric.
+        public let value: Double?
+
+        public init(name: EBSMetricName? = nil, statistic: MetricStatistic? = nil, value: Double? = nil) {
+            self.name = name
+            self.statistic = statistic
+            self.value = value
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case name
+            case statistic
+            case value
+        }
+    }
+
     public struct ExportAutoScalingGroupRecommendationsRequest: AWSEncodableShape {
-        /// The IDs of the AWS accounts for which to export Auto Scaling group recommendations. If your account is the master account of an organization, use this parameter to specify the member accounts for which you want to export recommendations. This parameter cannot be specified together with the include member accounts parameter. The parameters are mutually exclusive. Recommendations for member accounts are not included in the export if this parameter, or the include member accounts parameter, is omitted. You can specify multiple account IDs per request.
+        /// The IDs of the AWS accounts for which to export Auto Scaling group recommendations. If your account is the management account of an organization, use this parameter to specify the member accounts for which you want to export recommendations. This parameter cannot be specified together with the include member accounts parameter. The parameters are mutually exclusive. Recommendations for member accounts are not included in the export if this parameter, or the include member accounts parameter, is omitted. You can specify multiple account IDs per request.
         public let accountIds: [String]?
         /// The recommendations data to include in the export file. For more information about the fields that can be exported, see Exported files in the Compute Optimizer User Guide.
         public let fieldsToExport: [ExportableAutoScalingGroupField]?
@@ -315,7 +373,7 @@ extension ComputeOptimizer {
         public let fileFormat: FileFormat?
         /// An array of objects that describe a filter to export a more specific set of Auto Scaling group recommendations.
         public let filters: [Filter]?
-        /// Indicates whether to include recommendations for resources in all member accounts of the organization if your account is the master account of an organization. The member accounts must also be opted in to Compute Optimizer. Recommendations for member accounts of the organization are not included in the export file if this parameter is omitted. This parameter cannot be specified together with the account IDs parameter. The parameters are mutually exclusive. Recommendations for member accounts are not included in the export if this parameter, or the account IDs parameter, is omitted.
+        /// Indicates whether to include recommendations for resources in all member accounts of the organization if your account is the management account of an organization. The member accounts must also be opted in to Compute Optimizer. Recommendations for member accounts of the organization are not included in the export file if this parameter is omitted. This parameter cannot be specified together with the account IDs parameter. The parameters are mutually exclusive. Recommendations for member accounts are not included in the export if this parameter, or the account IDs parameter, is omitted.
         public let includeMemberAccounts: Bool?
         /// An object to specify the destination Amazon Simple Storage Service (Amazon S3) bucket name and key prefix for the export job. You must create the destination Amazon S3 bucket for your recommendations export before you create the export job. Compute Optimizer does not create the S3 bucket for you. After you create the S3 bucket, ensure that it has the required permission policy to allow Compute Optimizer to write the export file to it. If you plan to specify an object prefix when you create the export job, you must include the object prefix in the policy that you add to the S3 bucket. For more information, see Amazon S3 Bucket Policy for Compute Optimizer in the Compute Optimizer user guide.
         public let s3DestinationConfig: S3DestinationConfig
@@ -370,7 +428,7 @@ extension ComputeOptimizer {
     }
 
     public struct ExportEC2InstanceRecommendationsRequest: AWSEncodableShape {
-        /// The IDs of the AWS accounts for which to export instance recommendations. If your account is the master account of an organization, use this parameter to specify the member accounts for which you want to export recommendations. This parameter cannot be specified together with the include member accounts parameter. The parameters are mutually exclusive. Recommendations for member accounts are not included in the export if this parameter, or the include member accounts parameter, is omitted. You can specify multiple account IDs per request.
+        /// The IDs of the AWS accounts for which to export instance recommendations. If your account is the management account of an organization, use this parameter to specify the member accounts for which you want to export recommendations. This parameter cannot be specified together with the include member accounts parameter. The parameters are mutually exclusive. Recommendations for member accounts are not included in the export if this parameter, or the include member accounts parameter, is omitted. You can specify multiple account IDs per request.
         public let accountIds: [String]?
         /// The recommendations data to include in the export file. For more information about the fields that can be exported, see Exported files in the Compute Optimizer User Guide.
         public let fieldsToExport: [ExportableInstanceField]?
@@ -378,7 +436,7 @@ extension ComputeOptimizer {
         public let fileFormat: FileFormat?
         /// An array of objects that describe a filter to export a more specific set of instance recommendations.
         public let filters: [Filter]?
-        /// Indicates whether to include recommendations for resources in all member accounts of the organization if your account is the master account of an organization. The member accounts must also be opted in to Compute Optimizer. Recommendations for member accounts of the organization are not included in the export file if this parameter is omitted. Recommendations for member accounts are not included in the export if this parameter, or the account IDs parameter, is omitted.
+        /// Indicates whether to include recommendations for resources in all member accounts of the organization if your account is the management account of an organization. The member accounts must also be opted in to Compute Optimizer. Recommendations for member accounts of the organization are not included in the export file if this parameter is omitted. Recommendations for member accounts are not included in the export if this parameter, or the account IDs parameter, is omitted.
         public let includeMemberAccounts: Bool?
         /// An object to specify the destination Amazon Simple Storage Service (Amazon S3) bucket name and key prefix for the export job. You must create the destination Amazon S3 bucket for your recommendations export before you create the export job. Compute Optimizer does not create the S3 bucket for you. After you create the S3 bucket, ensure that it has the required permission policy to allow Compute Optimizer to write the export file to it. If you plan to specify an object prefix when you create the export job, you must include the object prefix in the policy that you add to the S3 bucket. For more information, see Amazon S3 Bucket Policy for Compute Optimizer in the Compute Optimizer user guide.
         public let s3DestinationConfig: S3DestinationConfig
@@ -420,9 +478,9 @@ extension ComputeOptimizer {
     }
 
     public struct Filter: AWSEncodableShape {
-        /// The name of the filter. Specify Finding to return recommendations with a specific findings classification (e.g., Overprovisioned). Specify RecommendationSourceType to return recommendations of a specific resource type (e.g., AutoScalingGroup).
+        /// The name of the filter. Specify Finding to return recommendations with a specific finding classification (e.g., Overprovisioned). Specify RecommendationSourceType to return recommendations of a specific resource type (e.g., AutoScalingGroup).
         public let name: FilterName?
-        /// The value of the filter. If you specify the name parameter as Finding, and you request recommendations for an instance, then the valid values are Underprovisioned, Overprovisioned, NotOptimized, or Optimized. If you specify the name parameter as Finding, and you request recommendations for an Auto Scaling group, then the valid values are Optimized, or NotOptimized. If you specify the name parameter as RecommendationSourceType, then the valid values are Ec2Instance, or AutoScalingGroup.
+        /// The value of the filter. The valid values for this parameter are as follows, depending on what you specify for the name parameter and the resource type that you wish to filter results for:   Specify Optimized or NotOptimized if you specified the name parameter as Finding and you want to filter results for Auto Scaling groups.   Specify Underprovisioned, Overprovisioned, or Optimized if you specified the name parameter as Finding and you want to filter results for EC2 instances.   Specify Ec2Instance or AutoScalingGroup if you specified the name parameter as RecommendationSourceType.
         public let values: [String]?
 
         public init(name: FilterName? = nil, values: [String]? = nil) {
@@ -437,7 +495,7 @@ extension ComputeOptimizer {
     }
 
     public struct GetAutoScalingGroupRecommendationsRequest: AWSEncodableShape {
-        /// The IDs of the AWS accounts for which to return Auto Scaling group recommendations. If your account is the master account of an organization, use this parameter to specify the member accounts for which you want to return Auto Scaling group recommendations. Only one account ID can be specified per request.
+        /// The IDs of the AWS accounts for which to return Auto Scaling group recommendations. If your account is the management account of an organization, use this parameter to specify the member accounts for which you want to return Auto Scaling group recommendations. Only one account ID can be specified per request.
         public let accountIds: [String]?
         /// The Amazon Resource Name (ARN) of the Auto Scaling groups for which to return recommendations.
         public let autoScalingGroupArns: [String]?
@@ -486,8 +544,58 @@ extension ComputeOptimizer {
         }
     }
 
+    public struct GetEBSVolumeRecommendationsRequest: AWSEncodableShape {
+        /// The IDs of the AWS accounts for which to return volume recommendations. If your account is the management account of an organization, use this parameter to specify the member accounts for which you want to return volume recommendations. Only one account ID can be specified per request.
+        public let accountIds: [String]?
+        /// An array of objects that describe a filter that returns a more specific list of volume recommendations.
+        public let filters: [EBSFilter]?
+        /// The maximum number of volume recommendations to return with a single request. To retrieve the remaining results, make another request with the returned NextToken value.
+        public let maxResults: Int?
+        /// The token to advance to the next page of volume recommendations.
+        public let nextToken: String?
+        /// The Amazon Resource Name (ARN) of the volumes for which to return recommendations.
+        public let volumeArns: [String]?
+
+        public init(accountIds: [String]? = nil, filters: [EBSFilter]? = nil, maxResults: Int? = nil, nextToken: String? = nil, volumeArns: [String]? = nil) {
+            self.accountIds = accountIds
+            self.filters = filters
+            self.maxResults = maxResults
+            self.nextToken = nextToken
+            self.volumeArns = volumeArns
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case accountIds
+            case filters
+            case maxResults
+            case nextToken
+            case volumeArns
+        }
+    }
+
+    public struct GetEBSVolumeRecommendationsResponse: AWSDecodableShape {
+        /// An array of objects that describe errors of the request. For example, an error is returned if you request recommendations for an unsupported volume.
+        public let errors: [GetRecommendationError]?
+        /// The token to use to advance to the next page of volume recommendations. This value is null when there are no more pages of volume recommendations to return.
+        public let nextToken: String?
+        /// An array of objects that describe volume recommendations.
+        public let volumeRecommendations: [VolumeRecommendation]?
+
+        public init(errors: [GetRecommendationError]? = nil, nextToken: String? = nil, volumeRecommendations: [VolumeRecommendation]? = nil) {
+            self.errors = errors
+            self.nextToken = nextToken
+            self.volumeRecommendations = volumeRecommendations
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case errors
+            case nextToken
+            case volumeRecommendations
+        }
+    }
+
     public struct GetEC2InstanceRecommendationsRequest: AWSEncodableShape {
-        /// The IDs of the AWS accounts for which to return instance recommendations. If your account is the master account of an organization, use this parameter to specify the member accounts for which you want to return instance recommendations. Only one account ID can be specified per request.
+        /// The IDs of the AWS accounts for which to return instance recommendations. If your account is the management account of an organization, use this parameter to specify the member accounts for which you want to return instance recommendations. Only one account ID can be specified per request.
         public let accountIds: [String]?
         /// An array of objects that describe a filter that returns a more specific list of instance recommendations.
         public let filters: [Filter]?
@@ -583,7 +691,7 @@ extension ComputeOptimizer {
     }
 
     public struct GetEnrollmentStatusResponse: AWSDecodableShape {
-        /// Confirms the enrollment status of member accounts within the organization, if the account is a master account of an organization.
+        /// Confirms the enrollment status of member accounts within the organization, if the account is a management account of an organization.
         public let memberAccountsEnrolled: Bool?
         /// The enrollment status of the account.
         public let status: Status?
@@ -625,7 +733,7 @@ extension ComputeOptimizer {
     }
 
     public struct GetRecommendationSummariesRequest: AWSEncodableShape {
-        /// The IDs of the AWS accounts for which to return recommendation summaries. If your account is the master account of an organization, use this parameter to specify the member accounts for which you want to return recommendation summaries. Only one account ID can be specified per request.
+        /// The IDs of the AWS accounts for which to return recommendation summaries. If your account is the management account of an organization, use this parameter to specify the member accounts for which you want to return recommendation summaries. Only one account ID can be specified per request.
         public let accountIds: [String]?
         /// The maximum number of recommendation summaries to return with a single request. To retrieve the remaining results, make another request with the returned NextToken value.
         public let maxResults: Int?
@@ -667,7 +775,7 @@ extension ComputeOptimizer {
         public let accountId: String?
         /// The instance type of the current instance.
         public let currentInstanceType: String?
-        /// The finding classification for the instance. Findings for instances include:     Underprovisioned —An instance is considered under-provisioned when at least one specification of your instance, such as CPU, memory, or network, does not meet the performance requirements of your workload. Under-provisioned instances may lead to poor application performance.     Overprovisioned —An instance is considered over-provisioned when at least one specification of your instance, such as CPU, memory, or network, can be sized down while still meeting the performance requirements of your workload, and no specification is under-provisioned. Over-provisioned instances may lead to unnecessary infrastructure cost.     Optimized —An instance is considered optimized when all specifications of your instance, such as CPU, memory, and network, meet the performance requirements of your workload and is not over provisioned. An optimized instance runs your workloads with optimal performance and infrastructure cost. For optimized resources, AWS Compute Optimizer might recommend a new generation instance type.    The values that are returned might be UNDER_PROVISIONED, OVER_PROVISIONED, or OPTIMIZED.
+        /// The finding classification for the instance. Findings for instances include:     Underprovisioned —An instance is considered under-provisioned when at least one specification of your instance, such as CPU, memory, or network, does not meet the performance requirements of your workload. Under-provisioned instances may lead to poor application performance.     Overprovisioned —An instance is considered over-provisioned when at least one specification of your instance, such as CPU, memory, or network, can be sized down while still meeting the performance requirements of your workload, and no specification is under-provisioned. Over-provisioned instances may lead to unnecessary infrastructure cost.     Optimized —An instance is considered optimized when all specifications of your instance, such as CPU, memory, and network, meet the performance requirements of your workload and is not over provisioned. An optimized instance runs your workloads with optimal performance and infrastructure cost. For optimized resources, AWS Compute Optimizer might recommend a new generation instance type.
         public let finding: Finding?
         /// The Amazon Resource Name (ARN) of the current instance.
         public let instanceArn: String?
@@ -739,7 +847,7 @@ extension ComputeOptimizer {
     public struct JobFilter: AWSEncodableShape {
         /// The name of the filter. Specify ResourceType to return export jobs of a specific resource type (e.g., Ec2Instance). Specify JobStatus to return export jobs with a specific status (e.g, Complete).
         public let name: JobFilterName?
-        /// The value of the filter. If you specify the name parameter as ResourceType, the valid values are Ec2Instance or AutoScalingGroup. If you specify the name parameter as JobStatus, the valid values are Queued, InProgress, Complete, or Failed.
+        /// The value of the filter. The valid values for this parameter are as follows, depending on what you specify for the name parameter:   Specify Ec2Instance or AutoScalingGroup if you specified the name parameter as ResourceType. There is no filter for EBS volumes because volume recommendations cannot be exported at this time.   Specify Queued, InProgress, Complete, or Failed if you specified the name parameter as JobStatus.
         public let values: [String]?
 
         public init(name: JobFilterName? = nil, values: [String]? = nil) {
@@ -754,7 +862,7 @@ extension ComputeOptimizer {
     }
 
     public struct ProjectedMetric: AWSDecodableShape {
-        /// The name of the projected utilization metric.
+        /// The name of the projected utilization metric. The following projected utilization metrics are returned:    Cpu - The projected percentage of allocated EC2 compute units that would be in use on the recommendation option had you used that resource during the analyzed period. This metric identifies the processing power required to run an application on the recommendation option. Depending on the instance type, tools in your operating system can show a lower percentage than CloudWatch when the instance is not allocated a full processor core. Units: Percent    Memory - The percentage of memory that would be in use on the recommendation option had you used that resource during the analyzed period. This metric identifies the amount of memory required to run an application on the recommendation option. Units: Percent  The Memory metric is returned only for resources that have the unified CloudWatch agent installed on them. For more information, see Enabling Memory Utilization with the CloudWatch Agent.
         public let name: MetricName?
         /// The time stamps of the projected utilization metric.
         public let timestamps: [Date]?
@@ -926,7 +1034,7 @@ extension ComputeOptimizer {
     }
 
     public struct UpdateEnrollmentStatusRequest: AWSEncodableShape {
-        /// Indicates whether to enroll member accounts of the organization if the your account is the master account of an organization.
+        /// Indicates whether to enroll member accounts of the organization if the your account is the management account of an organization.
         public let includeMemberAccounts: Bool?
         /// The new enrollment status of the account. Accepted options are Active or Inactive. You will get an error if Pending or Failed are specified.
         public let status: Status
@@ -960,9 +1068,9 @@ extension ComputeOptimizer {
     }
 
     public struct UtilizationMetric: AWSDecodableShape {
-        /// The name of the utilization metric.  The Memory metric is returned only for resources that have the unified CloudWatch agent installed on them. For more information, see Enabling Memory Utilization with the CloudWatch Agent.
+        /// The name of the utilization metric. The following utilization metrics are available:    Cpu - The percentage of allocated EC2 compute units that are currently in use on the instance. This metric identifies the processing power required to run an application on the instance. Depending on the instance type, tools in your operating system can show a lower percentage than CloudWatch when the instance is not allocated a full processor core. Units: Percent    Memory - The percentage of memory that is currently in use on the instance. This metric identifies the amount of memory required to run an application on the instance. Units: Percent  The Memory metric is returned only for resources that have the unified CloudWatch agent installed on them. For more information, see Enabling Memory Utilization with the CloudWatch Agent.     EBS_READ_OPS_PER_SECOND - The completed read operations from all EBS volumes attached to the instance in a specified period of time. Unit: Count    EBS_WRITE_OPS_PER_SECOND - The completed write operations to all EBS volumes attached to the instance in a specified period of time. Unit: Count    EBS_READ_BYTES_PER_SECOND - The bytes read from all EBS volumes attached to the instance in a specified period of time. Unit: Bytes    EBS_WRITE_BYTES_PER_SECOND - The bytes written to all EBS volumes attached to the instance in a specified period of time. Unit: Bytes
         public let name: MetricName?
-        /// The statistic of the utilization metric.
+        /// The statistic of the utilization metric. The following statistics are available:    Average - This is the value of Sum / SampleCount during the specified period, or the average value observed during the specified period.    Maximum - The highest value observed during the specified period. Use this value to determine high volumes of activity for your application.
         public let statistic: MetricStatistic?
         /// The value of the utilization metric.
         public let value: Double?
@@ -977,6 +1085,101 @@ extension ComputeOptimizer {
             case name
             case statistic
             case value
+        }
+    }
+
+    public struct VolumeConfiguration: AWSDecodableShape {
+        /// The baseline IOPS of the volume.
+        public let volumeBaselineIOPS: Int?
+        /// The baseline throughput of the volume.
+        public let volumeBaselineThroughput: Int?
+        /// The burst IOPS of the volume.
+        public let volumeBurstIOPS: Int?
+        /// The burst throughput of the volume.
+        public let volumeBurstThroughput: Int?
+        /// The size of the volume, in GiB.
+        public let volumeSize: Int?
+        /// The volume type. This can be gp2 for General Purpose SSD, io1 or io2 for Provisioned IOPS SSD, st1 for Throughput Optimized HDD, sc1 for Cold HDD, or standard for Magnetic volumes.
+        public let volumeType: String?
+
+        public init(volumeBaselineIOPS: Int? = nil, volumeBaselineThroughput: Int? = nil, volumeBurstIOPS: Int? = nil, volumeBurstThroughput: Int? = nil, volumeSize: Int? = nil, volumeType: String? = nil) {
+            self.volumeBaselineIOPS = volumeBaselineIOPS
+            self.volumeBaselineThroughput = volumeBaselineThroughput
+            self.volumeBurstIOPS = volumeBurstIOPS
+            self.volumeBurstThroughput = volumeBurstThroughput
+            self.volumeSize = volumeSize
+            self.volumeType = volumeType
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case volumeBaselineIOPS
+            case volumeBaselineThroughput
+            case volumeBurstIOPS
+            case volumeBurstThroughput
+            case volumeSize
+            case volumeType
+        }
+    }
+
+    public struct VolumeRecommendation: AWSDecodableShape {
+        /// The AWS account ID of the volume.
+        public let accountId: String?
+        /// An array of objects that describe the current configuration of the volume.
+        public let currentConfiguration: VolumeConfiguration?
+        /// The finding classification for the volume. Findings for volumes include:     NotOptimized —A volume is considered not optimized when AWS Compute Optimizer identifies a recommendation that can provide better performance for your workload.     Optimized —An volume is considered optimized when Compute Optimizer determines that the volume is correctly provisioned to run your workload based on the chosen volume type. For optimized resources, Compute Optimizer might recommend a new generation volume type.
+        public let finding: EBSFinding?
+        /// The time stamp of when the volume recommendation was last refreshed.
+        public let lastRefreshTimestamp: Date?
+        /// The number of days for which utilization metrics were analyzed for the volume.
+        public let lookBackPeriodInDays: Double?
+        /// An array of objects that describe the utilization metrics of the volume.
+        public let utilizationMetrics: [EBSUtilizationMetric]?
+        /// The Amazon Resource Name (ARN) of the current volume.
+        public let volumeArn: String?
+        /// An array of objects that describe the recommendation options for the volume.
+        public let volumeRecommendationOptions: [VolumeRecommendationOption]?
+
+        public init(accountId: String? = nil, currentConfiguration: VolumeConfiguration? = nil, finding: EBSFinding? = nil, lastRefreshTimestamp: Date? = nil, lookBackPeriodInDays: Double? = nil, utilizationMetrics: [EBSUtilizationMetric]? = nil, volumeArn: String? = nil, volumeRecommendationOptions: [VolumeRecommendationOption]? = nil) {
+            self.accountId = accountId
+            self.currentConfiguration = currentConfiguration
+            self.finding = finding
+            self.lastRefreshTimestamp = lastRefreshTimestamp
+            self.lookBackPeriodInDays = lookBackPeriodInDays
+            self.utilizationMetrics = utilizationMetrics
+            self.volumeArn = volumeArn
+            self.volumeRecommendationOptions = volumeRecommendationOptions
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case accountId
+            case currentConfiguration
+            case finding
+            case lastRefreshTimestamp
+            case lookBackPeriodInDays
+            case utilizationMetrics
+            case volumeArn
+            case volumeRecommendationOptions
+        }
+    }
+
+    public struct VolumeRecommendationOption: AWSDecodableShape {
+        /// An array of objects that describe a volume configuration.
+        public let configuration: VolumeConfiguration?
+        /// The performance risk of the volume recommendation option. Performance risk is the likelihood of the recommended volume type not meeting the performance requirement of your workload. The lowest performance risk is categorized as 0, and the highest as 5.
+        public let performanceRisk: Double?
+        /// The rank of the volume recommendation option. The top recommendation option is ranked as 1.
+        public let rank: Int?
+
+        public init(configuration: VolumeConfiguration? = nil, performanceRisk: Double? = nil, rank: Int? = nil) {
+            self.configuration = configuration
+            self.performanceRisk = performanceRisk
+            self.rank = rank
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case configuration
+            case performanceRisk
+            case rank
         }
     }
 }
